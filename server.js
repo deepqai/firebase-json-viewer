@@ -6,7 +6,7 @@ const serveStatic = require("serve-static");
 const { google } = require("googleapis");
 const admin = require("firebase-admin");
 
-const Server = (database, serviceAccountPath) => {
+const Server = (database, serviceAccountPath, token) => {
   // Load the service account key JSON file.
   const serviceAccount = serviceAccountPath ? require(serviceAccountPath) : null;
 
@@ -16,7 +16,7 @@ const Server = (database, serviceAccountPath) => {
       : {
           getAccessToken: () => ({
             expires_in: 1000000,
-            access_token: "",
+            access_token: token,
           }),
         },
     databaseURL: database,
@@ -37,7 +37,7 @@ const Server = (database, serviceAccountPath) => {
   let cachedToken = null;
   const getToken = () => {
     if (!serviceAccount) {
-      return Promise.resolve("");
+      return Promise.resolve(token)
     }
     if (cachedToken && cachedToken.expiry_date > Date.now()) {
       return Promise.resolve(cachedToken.access_token);
@@ -71,10 +71,6 @@ const Server = (database, serviceAccountPath) => {
   });
   app.get("/database", (req, res) => {
     res.send(database);
-  });
-  app.delete("*", (req, res) => {
-    db.ref(req.originalUrl).set(null);
-    res.end();
   });
   app.get("*", (_, res) => res.sendFile(path.join(serveDir, fallbackPage)));
 

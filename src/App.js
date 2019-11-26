@@ -38,20 +38,6 @@ class App extends Component {
     clearInterval(this.intervalID);
   }
 
-  deleteFirebase(dataRef) {
-    const { mode } = this.state;
-    fetch(dataRef, { method: "DELETE" })
-      .then(() => {
-        // force refresh after a successful delete.
-        if (mode === MODE_REALTIME) {
-          this.getFirebase(window.location.pathname, true);
-        } else {
-          this.getFirebase(path.dirname(dataRef), false);
-        }
-      })
-      .catch(err => alert(err));
-  }
-
   getFirebase(dataRef, realtime) {
     const { pathname } = window.location;
     const { databaseURL } = this.props;
@@ -66,11 +52,11 @@ class App extends Component {
       .then(token => token.text())
       .then(token =>
         Promise.all([
-          fetch(`${databaseURL}${dataRef}.json?shallow=true&access_token=${token}`)
+          fetch(`${databaseURL}${dataRef}.json?shallow=true&auth=${token}`)
             .then(resp => resp.json())
             .then(json => ({ mode: MODE_OFFLINE, json: json })),
           realtime
-            ? fetch(`${databaseURL}${dataRef}.json?access_token=${token}`, { signal })
+            ? fetch(`${databaseURL}${dataRef}.json?auth=${token}`, { signal })
                 .then(resp => resp.json())
                 .then(json => ({ mode: MODE_REALTIME, json: json }))
                 .catch(e => {
@@ -224,14 +210,6 @@ class App extends Component {
                     <a onClick={e => e.stopPropagation()} href={ref}>
                       {raw[0] + (nested ? "" : ":")}
                     </a>
-                    <img
-                      alt="delete"
-                      src="/delete.png"
-                      onClick={e => {
-                        e.stopPropagation();
-                        this.deleteFirebase(ref);
-                      }}
-                    />
                   </div>
                 );
             }

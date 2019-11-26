@@ -5,7 +5,7 @@ const Server = require("../server");
 
 program
   .option("-d, --database <url>", "Firebase database URL (https://myapp.firebaseio.com)")
-  .option("-t, --permanentToken <token>", "Optional, Firebase permanent token for accessing firebase-go-server")
+  .option("-t, --permanentToken <token>", "Optional, Firebase permanent token for accessing firebase")
   .parse(process.argv);
 
 const { database, permanentToken } = program;

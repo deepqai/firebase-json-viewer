@@ -6,54 +6,10 @@ const serveStatic = require("serve-static");
 const { google } = require("googleapis");
 const admin = require("firebase-admin");
 
-const Server = (database, serviceAccountPath) => {
-  // Load the service account key JSON file.
-  const serviceAccount = serviceAccountPath ? require(serviceAccountPath) : null;
-
-  admin.initializeApp({
-    credential: serviceAccount
-      ? admin.credential.cert(serviceAccount)
-      : {
-          getAccessToken: () => ({
-            expires_in: 1000000,
-            access_token: "",
-          }),
-        },
-    databaseURL: database,
-  });
-
-  const db = admin.database();
-
-  // Define the required scopes.
-  const scopes = [
-    "https://www.googleapis.com/auth/userinfo.email",
-    "https://www.googleapis.com/auth/firebase.database",
-  ];
-
-  // Authenticate a JWT client with the service account.
-  const jwtClient =
-    serviceAccount && new google.auth.JWT(serviceAccount.client_email, null, serviceAccount.private_key, scopes);
-
+const Server = (database, token) => {
   let cachedToken = null;
   const getToken = () => {
-    if (!serviceAccount) {
-      return Promise.resolve("");
-    }
-    if (cachedToken && cachedToken.expiry_date > Date.now()) {
-      return Promise.resolve(cachedToken.access_token);
-    }
-    return new Promise((resolve, reject) => {
-      jwtClient.authorize((error, token) => {
-        if (error) {
-          reject(`Error making request to generate access token: ${error}`);
-        } else if (token.access_token === null) {
-          reject("Provided service account does not have permission to generate access tokens");
-        } else {
-          cachedToken = token;
-          resolve(cachedToken.access_token);
-        }
-      });
-    });
+    return Promise.resolve(token)
   };
 
   const app = express();
@@ -71,10 +27,6 @@ const Server = (database, serviceAccountPath) => {
   });
   app.get("/database", (req, res) => {
     res.send(database);
-  });
-  app.delete("*", (req, res) => {
-    db.ref(req.originalUrl).set(null);
-    res.end();
   });
   app.get("*", (_, res) => res.sendFile(path.join(serveDir, fallbackPage)));
 
